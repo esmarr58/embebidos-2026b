@@ -12,5 +12,6 @@ Plataforma: **ESP32-S3-DevKitC-1** con **ESP-IDF** en **PlatformIO**.
 | Carpeta | Actividad |
 |---|---|
 | `tc1-guiada/` | TC1 — Proyecto base y LED (blink + PWM a mano) |
+| `practica1/` | Práctica 1 — Contador en display de 7 segmentos (código base) |
 
 Dr. Rubén Estrada Marmolejo · CUCEI, Universidad de Guadalajara
