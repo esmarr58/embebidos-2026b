@@ -14,5 +14,6 @@ Plataforma: **ESP32-S3-DevKitC-1** con **ESP-IDF** en **PlatformIO**.
 | `tc1-guiada/` | TC1 — Proyecto base y LED (blink + PWM a mano) |
 | `practica1/` | Práctica 1 — Contador en display de 7 segmentos (código base) |
 | `practica3/` | Práctica 3 — Contador óptico 0–9 con fototransistor (entrada digital y ADC con calibración; port de Arduino a ESP-IDF) |
+| `tc3-guiada/` | TC3 — Lector ADC de potenciómetro 10 kΩ a display de 7 segmentos (oneshot + calibración) |
 
 Dr. Rubén Estrada Marmolejo · CUCEI, Universidad de Guadalajara
