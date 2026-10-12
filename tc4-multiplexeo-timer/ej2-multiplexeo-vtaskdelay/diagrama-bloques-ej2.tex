@@ -1,0 +1,35 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 12mm]
+
+\coordinate (tit) at (0,0);
+\gdef\titulo{Ejemplo 2 · multiplexeo con vTaskDelay (todo en un bucle)}
+\node[blk,fill=verde!14] (d) at (-4.2,-2.3) {\sgn{4} apaga U\\escribe decenas\\enciende D};
+\node[blk,fill=rojo!10,right=6mm of d] (w1) {vTaskDelay\\(T\_DIGITO\_MS)};
+\node[blk,fill=verde!14,right=6mm of w1] (u) {\sgn{4} apaga D\\escribe unidades\\enciende U};
+\node[blk,fill=rojo!10,below=5mm of w1,minimum height=0.7cm] (w2) {vTaskDelay + \sgn{5} cuenta vueltas};
+\draw[fl] (d) -- (w1); \draw[fl] (w1) -- (u);
+\draw[fl] (u) |- (w2); \draw[fl] (w2) -| (d);
+\node[draw=morado,thick,rounded corners,fit=(d)(u)(w2),inner sep=3mm,label={[font=\scriptsize\bfseries,text=morado,anchor=south west]north west:app\_main: while(1)}] (loop) {};
+\node[blk,fill=naranja!16,below=8mm of loop] (disp) {Display 2 dígitos\\bus a–g compartido};
+\draw[fl] (loop) -- node[et,right]{bus a–g + GPIO 10/11} (disp);
+\node[et,text=rojo,right=6mm of disp,text width=5.4cm,align=left] {El bucle está OCUPADO barriendo.\\1 tick = 10 ms: pdMS\_TO\_TICKS(5) = 0.};
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {\titulo};
+\end{tikzpicture}
+\end{document}

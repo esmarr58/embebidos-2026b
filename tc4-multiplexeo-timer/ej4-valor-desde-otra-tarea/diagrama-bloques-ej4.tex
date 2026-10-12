@@ -1,0 +1,35 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 12mm]
+
+\coordinate (tit) at (0,0);
+\gdef\titulo{Ejemplo 4 · productor (tarea) y consumidor (callback) con buffer de pantalla}
+\node[blk,fill=morado!12,below left=22mm and 50mm of tit] (prod) {\sgn{5} tarea\_contador\\valor++ cada 250 ms\\\sgn{2} codifica dec/uni};
+\node[blk,fill=gray!10,right=24mm of prod,minimum width=3.2cm] (buf) {pantalla[2]\\+ candado (portMUX)};
+\node[blk,fill=verde!14,right=24mm of buf] (cb) {\sgn{4} refresco\_cb\\copia patrón → pinta\\→ alterna};
+\node[blk,fill=naranja!16,right=of cb] (disp) {Display\\2 dígitos};
+\node[blk,fill=azul!10,above=8mm of cb] (tm) {\sgn{3} esp\_timer\\periódico 2500 µs};
+\draw[fl] (prod) -- node[et,above]{escribe 2 B\\(sección crítica)} (buf);
+\draw[fl] (buf) -- node[et,above]{lee 1 B\\(sección crítica)} (cb);
+\draw[fl] (tm) -- node[et,right]{llama} (cb);
+\draw[fl] (cb) -- node[et,above]{GPIO} (disp);
+\node[et,below=6mm of buf,text=rojo,text width=9cm] {Sin candado: al pasar de 39 a 40 el callback podría leer\\pantalla[0] nuevo y pantalla[1] viejo → se ve «49» un instante.};
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {\titulo};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,42 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 12mm]
+
+\coordinate (tit) at (0,0);
+\gdef\titulo{Ejemplo 5 · rebanadas de tiempo: brillo y anti-ghosting}
+\node[blk,fill=azul!10,below left=8mm and 32mm of tit] (tm) {\sgn{3} esp\_timer\\periódico 500 µs};
+\node[blk,fill=verde!14,right=of tm,minimum width=4.6cm] (cb) {\sgn{4} tick\_cb\\slot 0: apaga → escribe → enciende\\slot = brillo: apaga\\slot 9: alterna dígito};
+\node[blk,fill=naranja!16,right=of cb] (disp) {Display\\2 dígitos};
+\node[blk,fill=morado!12,below=9mm of cb] (app) {\sgn{5} app\_main: rampa de brillo 1..10..1};
+\draw[fl] (tm) -- node[et,above]{llama} (cb);
+\draw[fl] (cb) -- node[et,above]{GPIO} (disp);
+\draw[fl] (app) -- node[et,right]{volatile brillo} (cb);
+\begin{scope}[shift={($(tm.south west)+(1.0,-3.6)$)},x=0.5cm,y=0.5cm]
+\node[et,anchor=east] at (-0.2,1.5) {DIG decenas};
+\node[et,anchor=east] at (-0.2,0) {DIG unidades};
+\draw[thick,azul] (0,1) -- (0,2) -- (6,2) -- (6,1) -- (20,1) -- (20,2) -- (26,2) -- (26,1);
+\draw[thick,verde] (0,-0.5) -- (10,-0.5) -- (10,0.5) -- (16,0.5) -- (16,-0.5) -- (26,-0.5);
+\foreach \i in {0,...,26} \draw[gray!60] (\i,-1) -- (\i,-0.85);
+\draw[-{Triangle}] (0,-1) -- (27,-1) node[right,et]{t};
+\node[et] at (3,2.5) {brillo = 6 de 10};
+\draw[<->,gray] (0,-1.4) -- (10,-1.4) node[midway,below,et]{turno: 10 slots × 500 µs = 5 ms};
+\end{scope}
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {\titulo};
+\end{tikzpicture}
+\end{document}

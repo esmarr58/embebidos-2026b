@@ -1,0 +1,36 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 12mm]
+
+\coordinate (tit) at (0,0);
+\gdef\titulo{Ejemplo 1 · un dígito (sin multiplexeo)}
+\node[blk,fill=morado!12,below left=8mm and 18mm of tit] (cnt) {\sgn{5} app\_main: bucle\\n = 0..9, vTaskDelay(1 s)};
+\node[blk,fill=azul!10,right=of cnt] (tab) {\sgn{2} PATRON[n]\\(bit0 = a ... bit6 = g)};
+\node[blk,fill=verde!14,right=of tab] (bus) {escribir\_segmentos\\7 × gpio\_set\_level};
+\node[blk,fill=naranja!16,below=12mm of bus] (disp) {Dígito unidades\\(cátodo común)};
+\node[blk,fill=azul!10,below=12mm of cnt] (cfg) {\sgn{1} config\_salida\\9 GPIO en 0};
+\node[blk,fill=gray!10,below=12mm of tab] (q) {2N3904 unidades\\GPIO 11 = 1 fijo};
+\draw[fl] (cnt) -- node[et,above]{n} (tab);
+\draw[fl] (tab) -- node[et,above]{patrón} (bus);
+\draw[fl] (bus) -- node[et,right]{GPIO 4–7,\\15–17} (disp);
+\draw[fl] (cfg) -- node[et,above]{habilita} (q);
+\draw[fl] (q) -- node[et,above]{cátodo\\a GND} (disp);
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {\titulo};
+\end{tikzpicture}
+\end{document}

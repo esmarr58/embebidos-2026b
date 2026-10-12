@@ -1,0 +1,37 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 12mm]
+
+\coordinate (tit) at (0,0);
+\gdef\titulo{Ejemplo 3 · multiplexeo gobernado por esp\_timer (resuelto)}
+\node[blk,fill=azul!10,below left=8mm and 30mm of tit] (hw) {Timer de hardware\\(SYSTIMER, 1 µs)};
+\node[blk,fill=azul!10,right=of hw] (task) {Tarea esp\_timer\\(prioridad alta)};
+\node[blk,fill=verde!14,right=of task] (cb) {\sgn{4} refresco\_cb\\apaga → escribe\\→ enciende → alterna};
+\node[blk,fill=naranja!16,right=of cb] (disp) {Display\\2 dígitos};
+\node[blk,fill=morado!12,below=10mm of task] (app) {\sgn{5} app\_main\\valor++ cada $\sim$1 s\\(+300 ms de trabajo)};
+\node[blk,fill=gray!10,below=10mm of cb] (val) {volatile valor\\(1 byte, 00..99)};
+\draw[fl] (hw) -- node[et,above]{vence c/\\2500 µs} (task);
+\draw[fl] (task) -- node[et,above]{llama} (cb);
+\draw[fl] (cb) -- node[et,above]{GPIO} (disp);
+\draw[fl] (app) -- node[et,above]{escribe} (val);
+\draw[fl] (val) -- node[et,right]{lee} (cb);
+\node[et,below=10mm of hw] {\sgn{3} esp\_timer\_create\\+ start\_periodic};
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {\titulo};
+\end{tikzpicture}
+\end{document}

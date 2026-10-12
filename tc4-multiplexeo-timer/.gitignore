@@ -1,0 +1,8 @@
+# Artefactos de compilacion de PlatformIO / ESP-IDF
+.pio/
+.vscode/
+sdkconfig.esp32-s3-devkitc-1
+sdkconfig.esp32-s3-devkitc-1.old
+dependencies.lock
+*.aux
+*.log

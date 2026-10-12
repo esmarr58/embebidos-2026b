@@ -15,5 +15,6 @@ Plataforma: **ESP32-S3-DevKitC-1** con **ESP-IDF** en **PlatformIO**.
 | `practica1/` | Práctica 1 — Contador en display de 7 segmentos (código base) |
 | `practica3/` | Práctica 3 — Contador óptico 0–9 con fototransistor (entrada digital y ADC con calibración; port de Arduino a ESP-IDF) |
 | `tc3-guiada/` | TC3 — Lector ADC de potenciómetro 10 kΩ a display de 7 segmentos (oneshot + calibración) |
+| `tc4-multiplexeo-timer/` | TC4 — Multiplexeo de 2 dígitos de 7 segmentos por `esp_timer`: 5 ejemplos progresivos (PlatformIO `espressif32@6.12.0`, ESP-IDF 5.5.0) |
 
 Dr. Rubén Estrada Marmolejo · CUCEI, Universidad de Guadalajara
