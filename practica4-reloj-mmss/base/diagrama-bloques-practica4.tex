@@ -1,0 +1,45 @@
+% Diagrama a bloques del firmware - Practica 4 (reloj mm:ss, codigo base)
+% Seminario de Sistemas Embebidos (I7267) 2026B - Dr. Ruben Estrada
+% Compilar:  pdflatex diagrama-bloques-practica4.tex  -> PDF recortado (standalone)
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Subobjetivos: 1 salidas/entradas, 2 codificar, 3 timers, 4 refrescar, 5 base 1 s, 6 botones, 7 medir
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 18mm]
+
+\node[blk,fill=azul!10] (ts) {\sgn{3} esp\_timer t\_tick\\periódico 1\,000\,000 µs};
+\node[blk,fill=morado!12,right=of ts] (scb) {\sgn{5} tick\_cb\\si corriendo: segundos+1\\(99:59 → 00:00)\\\sgn{7} mide periodo\_us};
+\node[blk,fill=gray!10,right=22mm of scb,minimum width=3.4cm] (buf) {segundos · corriendo\\periodo\_us · n\_refrescos\\+ candado (portMUX)};
+\node[blk,fill=verde!14,below=16mm of buf] (rcb) {\sgn{4} refresco\_cb\\apaga 4 → escribe\\\sgn{2} PATRON[digito\_de()]\\→ enciende 1 → avanza};
+\node[blk,fill=azul!10,left=of rcb] (tr) {\sgn{3} esp\_timer t\_refresco\\periódico 2000 µs};
+\node[blk,fill=naranja!16,right=of rcb] (disp) {Display 7 seg. ×4\\MM:SS\\(2N3904 por dígito)};
+\node[blk,fill=rojo!10,right=of buf] (am) {\sgn{6} app\_main (tarea)\\sondea BTN\_PAUSE/RESET\\cada 20 ms (antirrebote)\\\sgn{7} imprime 1 vez/s};
+\node[blk,fill=gray!5,above=8mm of am] (mon) {Monitor serie\\t = mm:ss | periodo | refrescos/s};
+\node[blk,fill=gray!5,left=of ts] (hw) {\sgn{1} GPIO\\7 seg + 4 hab. (salidas)\\2 botones (pull-up)};
+
+\draw[fl] (ts) -- node[et,above]{llama\\cada 1 s} (scb);
+\draw[fl] (scb) -- node[et,above]{escribe\\(sección crítica)} (buf);
+\draw[fl] (buf) -- node[et,right]{lee segundos\\(1 lectura)} (rcb);
+\draw[fl] (am) -- node[et,above]{pausa /\\reinicia} (buf);
+\draw[fl] (am) -- (mon);
+\draw[fl] (tr) -- node[et,above]{llama\\cada 2 ms} (rcb);
+\draw[fl] (rcb) -- node[et,above]{bus a–g\\+ habilita} (disp);
+\draw[fl] (hw) -- node[et,above]{luego} (ts);
+\node[et,below=5mm of rcb,text=rojo,text width=17cm] {4 dígitos × 2 ms = 8 ms por vuelta → cada dígito se repinta a 125 Hz (sin parpadeo, duty 25 \%). Las dos bases de tiempo son independientes: cambiar una no altera la otra.};
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {Práctica 4 · reloj mm:ss con dos esp\_timer (refresco 2 ms + base de 1 s) y botones por sondeo};
+\end{tikzpicture}
+\end{document}

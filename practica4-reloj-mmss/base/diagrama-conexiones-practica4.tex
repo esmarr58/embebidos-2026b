@@ -1,0 +1,63 @@
+% Diagrama de conexiones - Practica 4 (reloj mm:ss en 4 displays de 7 segmentos)
+% Seminario de Sistemas Embebidos (I7267) 2026B - Dr. Ruben Estrada
+% Compilar:  pdflatex diagrama-conexiones-practica4.tex  -> PDF recortado (standalone)
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage[american]{circuitikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\begin{document}
+\begin{circuitikz}[font=\footnotesize]
+  % ---------------- ESP32-S3 ----------------
+  \draw[thick,fill=azul!8] (0,-5.7) rectangle (2.6,4.6);
+  \node[font=\bfseries,align=center] at (1.3,4.1) {ESP32-S3\\DevKitC-1};
+  \node[anchor=east] at (2.55,3.0) {GPIO 4,5,6,7,15,16,17};
+  \node[anchor=east] at (2.55,2.6) {(segmentos a--g)};
+  \foreach \k/\g/\y in {0/10/-1.6, 1/11/-2.1, 2/12/-2.6, 3/13/-3.1} {
+    \node[anchor=east] at (2.55,\y) {GPIO \g\ (D\k)};
+  }
+  \node[anchor=east] at (2.55,-3.8) {GPIO 1 (BTN\_PAUSE)};
+  \node[anchor=east] at (2.55,-4.6) {GPIO 2 (BTN\_RESET)};
+  \node[anchor=east] at (2.55,-5.3) {GND};
+
+  % ---------------- Bus a-g con sus 7 resistencias ----------------
+  \draw[line width=2.2pt,draw=naranja] (2.6,3.0) -- (3.3,3.0);
+  \node[draw,thick,fill=naranja!15,align=center,minimum height=0.9cm] (rseg) at (4.3,3.0) {7 × R\\220--330\,\(\Omega\)};
+  \draw[line width=2.2pt,draw=naranja] (rseg.east) -- (15.6,3.0);
+  \node[naranja,above] at (10.2,3.05) {bus a--g compartido (7 líneas, una R en serie por segmento)};
+
+  % ---------------- 4 digitos + 4 transistores ----------------
+  \foreach \k/\x/\nom in {0/7/M decenas, 1/9.6/M unidades, 2/12.2/S decenas, 3/14.8/S unidades} {
+    \draw[line width=2.2pt,draw=naranja] (\x,3.0) -- (\x,2.4);
+    \node[draw,thick,fill=verde!12,minimum width=1.6cm,minimum height=1.3cm,align=center] (d\k) at (\x,1.75)
+      {D\k\\{\scriptsize \nom}};
+    \draw (d\k.south) -- (\x,0.4);
+    \node[npn,anchor=C] (q\k) at (\x,0.4) {};
+    \node[anchor=south west,font=\scriptsize] at ($(q\k.C)+(0.08,0.05)$) {Q\k};
+    \draw (q\k.E) -- (\x,-0.9) node[ground]{};
+  }
+  % bases: cada GPIO de habilitacion -> (por abajo) -> R_B vertical -> base
+  \foreach \k/\px/\py in {0/7/-1.6, 1/9.6/-2.1, 2/12.2/-2.6, 3/14.8/-3.1} {
+    \draw let \p1 = (q\k.B) in (2.6,\py cm) -- (\x1-0.9cm,\py cm) to[R] (\x1-0.9cm,\y1) -- (q\k.B);
+    \node[font=\scriptsize,anchor=west] at ($(q\k.B)+(-0.65,-0.75)$) {$R_B$};
+  }
+  % ---------------- Botones ----------------
+  \draw (2.6,-3.8) -- (3.4,-3.8) to[push button,l={\scriptsize BTN\_PAUSE}] (5.0,-3.8) -- (5.0,-4.1) node[ground]{};
+  \draw (2.6,-4.6) -- (3.4,-4.6) to[push button,l_={\scriptsize BTN\_RESET}] (5.0,-4.6);
+  \draw (2.6,-5.3) -- (3.2,-5.3) -- (3.2,-5.5) node[ground]{};
+  \node[align=left,font=\scriptsize,anchor=west,text=rojo] at (6.2,-4.5)
+    {Q0--Q3 = 2N3904 (NPN): colector al cátodo común de su dígito, emisor a GND.\\
+     Botones a GND con \emph{pull-up} interna (activos en bajo).\\
+     Tierra común: GND del ESP32-S3 = emisores de Q0--Q3 = botones.\\
+     $R_B$ = 1--2.2\,k$\Omega$ en la base de cada 2N3904.\\ Un GPIO de habilitación en 1 satura su 2N3904, une el cátodo a GND y enciende ese dígito.};
+  \draw (5.0,-4.6) -- (5.0,-4.9) node[ground]{};
+
+  \node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,1mm)$)
+    {Práctica 4 · conexiones del reloj MM:SS (cátodo común, multiplexeo con 2N3904)};
+\end{circuitikz}
+\end{document}
