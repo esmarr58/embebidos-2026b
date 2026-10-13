@@ -1,6 +1,6 @@
 # TC4 — Multiplexeo de 2 dígitos de 7 segmentos gobernado por un timer
 
-Serie progresiva de **5 proyectos PlatformIO + ESP-IDF completos** que acompaña al
+Serie progresiva de **6 proyectos PlatformIO + ESP-IDF completos** que acompaña al
 deck de teoría *Clase 16 · Multiplexeo por timer* y al TC4 del Seminario de
 Sistemas Embebidos (I7267), 2026B.
 
@@ -14,11 +14,12 @@ Sistemas Embebidos (I7267), 2026B.
 | `ej3-multiplexeo-esp-timer/` | **Ejemplo resuelto del TC4** | `esp_timer` periódico: apagar → escribir → encender → alternar |
 | `ej4-valor-desde-otra-tarea/` | El número lo produce otra tarea | Buffer de pantalla, sección crítica, callback corto |
 | `ej5-ghosting-y-brillo/` | Rebanadas de 500 µs | Brillo por tiempo encendido y orden anti-*ghosting* |
+| `ej6-contador-0-99/` | **Reto del TC4:** el display cuenta 00–99, uno por segundo | Dos `esp_timer`: refresco 2.5 ms + conteo 1 s; sección crítica |
 
 Cada carpeta trae `platformio.ini`, `CMakeLists.txt`, `src/CMakeLists.txt`,
 `src/main.c`, su **diagrama a bloques en PDF** (y su fuente `.tex`) y un README.
 
-## Etiquetas de subobjetivo (las mismas en los 5 `main.c`)
+## Etiquetas de subobjetivo (las mismas en los 6 `main.c`)
 
 `[1]` configurar salidas · `[2]` codificar número → patrón · `[3]` crear/arrancar el timer ·
 `[4]` refrescar: apagar → escribir → encender → alternar · `[5]` actualizar el valor

@@ -1,0 +1,37 @@
+\documentclass[border=6pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,babel,fit}
+\definecolor{azul}{HTML}{2A5CAA}\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{3E7C59}\definecolor{morado}{HTML}{6B4C9A}
+\definecolor{rojo}{HTML}{B23A34}\definecolor{tinta}{HTML}{1C1F24}
+\tikzset{blk/.style={rectangle,draw=tinta,thick,rounded corners=2pt,align=center,
+    minimum height=1cm,minimum width=2.6cm,font=\footnotesize},
+  fl/.style={-{Triangle[length=2.2mm]},thick,draw=tinta},
+  et/.style={font=\scriptsize,align=center},
+  sg/.style={circle,fill=naranja,text=white,inner sep=1.2pt,minimum width=0pt,minimum height=0pt,draw=none,font=\scriptsize\bfseries}}
+\newcommand{\sgn}[1]{\tikz[baseline=(n.base)]\node[sg](n){#1};}
+% Etiquetas de subobjetivo: 1 salidas, 2 codificar, 3 timer, 4 refrescar, 5 valor
+\begin{document}
+\begin{tikzpicture}[node distance=7mm and 20mm]
+
+\node[blk,fill=azul!10] (ts) {\sgn{3} esp\_timer t\_segundo\\periódico 1\,000\,000 µs};
+\node[blk,fill=morado!12,right=of ts] (scb) {\sgn{5} segundo\_cb\\cuenta = (cuenta+1) \% 100\\\sgn{2} codifica dec/uni};
+\node[blk,fill=gray!10,right=26mm of scb,minimum width=3.2cm] (buf) {cuenta + pantalla[2]\\+ candado (portMUX)};
+\node[blk,fill=verde!14,below=14mm of buf] (rcb) {\sgn{4} refresco\_cb\\apaga → escribe\\→ enciende → alterna};
+\node[blk,fill=azul!10,left=of rcb] (tr) {\sgn{3} esp\_timer t\_refresco\\periódico 2500 µs};
+\node[blk,fill=naranja!16,right=of rcb] (disp) {Display 7 seg.\\2 dígitos: 00…99};
+\node[blk,fill=gray!5,right=of buf] (am) {app\_main\\imprime cuenta\\(Monitor)};
+\draw[fl] (ts) -- node[et,above]{llama\\cada 1 s} (scb);
+\draw[fl] (scb) -- node[et,above]{escribe 3 B\\(sección crítica)} (buf);
+\draw[fl] (buf) -- node[et,right]{lee 1 B\\(sección crítica)} (rcb);
+\draw[fl] (buf) -- node[et,above]{lee} (am);
+\draw[fl] (tr) -- node[et,above]{llama\\cada 2.5 ms} (rcb);
+\draw[fl] (rcb) -- node[et,above]{bus a–g\\+ habilita} (disp);
+\node[et,below=5mm of rcb,text=rojo,text width=16cm] {Cada dígito se repinta cada 5 ms (200 Hz): sin parpadeo. La cuenta cambia cada 1 s y vuelve de 99 a 00.};
+\node[font=\bfseries,anchor=south] at ($(current bounding box.north)+(0,2mm)$) {Ejemplo 6 · contador 00–99 con dos esp\_timer (refresco 2.5 ms + conteo 1 s)};
+\end{tikzpicture}
+\end{document}
