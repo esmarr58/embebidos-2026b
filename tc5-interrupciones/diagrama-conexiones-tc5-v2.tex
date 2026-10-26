@@ -1,0 +1,33 @@
+\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,babel}
+\definecolor{azul}{HTML}{1F4E79}
+\definecolor{naranja}{HTML}{C9601F}
+\begin{document}
+\begin{tikzpicture}[font=\small,>=Latex,
+ box/.style={draw=azul,thick,rounded corners,fill=azul!6,align=center,text width=4.1cm,minimum height=1.4cm},
+ arr/.style={->,thick}]
+\node[box] (esp) {ESP32-S3\\GPIO a 3.3 V};
+\node[box,right=2cm of esp] (seg) {a,b,c,d,e,f,g\\GPIO4,5,6,7,15,16,17\\R 220--330 $\Omega$ por segmento};
+\node[box,below=1cm of seg] (dig) {GPIO10 / GPIO11\\R\textsubscript{B} 1--2.2 k$\Omega$ $\to$ base 2N3904\\C $\to$ cátodo; E $\to$ GND};
+\node[box,below=1cm of esp] (btn) {GPIO1 $\to$ pulsador $\to$ GND\\GPIO1 $\to$ 10 k$\Omega$ $\to$ 3V3\\Pull-up interna también habilitada};
+\draw[arr] (esp) -- (seg);
+\draw[arr] (esp.east) -- ++(0.5,0) |- (dig.west);
+\draw[arr] (btn) -- (esp);
+\node[below=0.7cm of btn,anchor=north west,text width=11cm,align=left] (nota)
+ {Dos displays de cátodo común: mismo bus que TC04; solo uno habilitado a la vez.
+ Verificar el patillaje del transistor y display usados. GND es común. GPIO4 ya es segmento.};
+\node[box,below=1.3cm of nota,anchor=north west,text width=2.4cm] (src) {Fuente regulada\\+5 V};
+\node[box,right=0.8cm of src,text width=2.4cm] (amp) {Multímetro DC\\borne A/mA\\en SERIE};
+\node[box,right=0.8cm of amp,text width=2.4cm] (vin) {VIN / 5V\\ESP32-S3};
+\draw[arr] (src) -- (amp);
+\draw[arr] (amp) -- (vin);
+\draw[thick] (src.south) -- ++(0,-0.8) node[below] {Negativo / GND} -| (vin.south);
+\node[below=1.5cm of amp,text width=11cm,align=center,text=naranja]
+ {Para medir: ambos USB DESCONECTADOS. Nunca amperímetro en paralelo.\\Cambiar bornes/rango y cableado con fuente apagada. No aplicar 5 V a GPIO/3V3.};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,45 @@
+VALIDACIÓN TC05 v2 — 2026-10-26, PC1
+
+Bases inspeccionadas:
+- ../tc4-multiplexeo-timer/main.c: patrones, cátodo común, resistencias,
+  bus 4/5/6/7/15/16/17 y habilitaciones 10/11; esp_timer 2500 us.
+- ../practica4-reloj-mmss/main.c: botón GPIO1 y datos protegidos por candado.
+- La versión TC05 anterior queda archivada por conflicto GPIO4/display
+  y cambio de alcance solicitado por el profesor.
+
+Compilación REAL, PlatformIO instalado en esta PC:
+platform espressif32 6.12.0, framework-espidf 3.50500.0 (ESP-IDF 5.5.0),
+board esp32-s3-devkitc-1. Los tres entornos terminaron SUCCESS.
+
+Programa A: RAM 13312 bytes, programa 218617 bytes.
+Programa B, light sleep: RAM 13472 bytes, programa 232189 bytes.
+Programa B, control despierto: RAM 13344 bytes, programa 220769 bytes.
+
+Se fijó sdkconfig.defaults a flash 8 MB, coincidente con el perfil de
+placa de PlatformIO; la compilación final no mostró warning de tamaño
+de flash ni advertencias del código propio. No se detectó flash físico:
+esto describe la configuración compilada, no una placa conectada.
+
+Pruebas de escritorio (main.c real, mock de GPIO/RTOS/esp_timer):
+python tests/test_host.py --cc <compilador-C-de-escritorio>
+- A: 102 pulsaciones, rebote inicial simulado y pulsación de 2 s sin
+  incremento repetido; módulo 100 comprobado.
+- Multiplexeo: patrones de 42, apagar antes de cambiar segmentos,
+  nunca dos habilitaciones activas simultáneamente.
+- B: parar timers, callbacks sin alterar cuenta/salidas estando parado,
+  otra pulsación para despertar, misma cuenta antes/después, reanudación,
+  contador siguiente y vuelta 99→00, liberar y rearmar flanco NEGEDGE.
+- Control de B: misma reanudación sin llamar esp_light_sleep_start.
+Tres variantes aprobadas. Simulación monohilo, no prueba de concurrencia
+real entre núcleos, ruido físico, fidelidad de tiempos ni consumo.
+
+Diagramas de conexiones y bloques A/B compilados con pdflatex.
+Guía DOCX/PDF y revisión didáctica en ../../TrabajosClase/.
+Para medir, USB y fuente VIN se usan en fases separadas. El consumo de
+placa a 5 V incluye regulador, LED y displays; no se promete corriente
+de catálogo del chip. Se pide control con displays OFF sin sleep.
+
+Pendiente de laboratorio: cableado real, funcionamiento de displays,
+antirrebote físico, tres ciclos sleep/despertar y tres lecturas estables
+por estado con multímetro. No había ESP32 conectada: device list solo COM1.
+No se afirma que la compilación ni los mocks sustituyan estas pruebas.
