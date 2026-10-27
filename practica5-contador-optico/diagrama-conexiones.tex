@@ -1,0 +1,23 @@
+\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}\usepackage[utf8]{inputenc}\usepackage{lmodern}
+\usepackage[american]{circuitikz}
+\begin{document}
+\begin{circuitikz}[font=\small]
+\draw (0,4) node[above]{3V3} to[R,l={2.2 k$\Omega$ inicial}] (0,2)
+ to[short,*-o] (3,2) node[right]{GPIO8 (colector)};
+\node[npn] (q) at (0,0.7) {};
+\draw (0,2) -- (q.C);
+\draw (q.E) -- ++(0,-0.5) node[ground]{};
+\draw[->] (-1.8,1.6) -- (-0.7,0.9);
+\draw[->] (-1.8,1.1) -- (-0.7,0.4);
+\node[above] at (-1.7,1.8) {Luz};
+\node[right] at (0.6,0.3) {Fototransistor};
+\node[align=left,text width=5.7cm] at (5.8,3.7) {Con luz: colector bajo.\\Haz bloqueado: colector alto.\\Medir los dos niveles antes de conectar como entrada digital.};
+\node[align=left,text width=10.5cm,anchor=north west] at (-0.7,-0.8)
+ {LED emisor: conservar el circuito y resistencia de la P3.\\
+ Displays: mismo bus a,b,c,d,e,f,g = GPIO4,5,6,7,15,16,17; R 220--330 $\Omega$ por segmento.\\
+ Decenas/unidades: GPIO10/11 $\to$ R base 1--2.2 k$\Omega$ $\to$ base 2N3904.\\
+ Colector de cada 2N3904 al cátodo del display; emisor a GND. GND común.\\
+ No aplicar 5 V a GPIO8. El filtro temporal no corrige niveles intermedios.};
+\end{circuitikz}
+\end{document}

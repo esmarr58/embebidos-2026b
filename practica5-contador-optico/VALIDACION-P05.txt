@@ -1,0 +1,28 @@
+P05 CONTADOR ÓPTICO — validación 2026-10-26, PC1
+
+Compilación real: PlatformIO, espressif32@6.12.0,
+framework-espidf 3.50500.0 (ESP-IDF 5.5.0), esp32-s3-devkitc-1.
+SUCCESS, sin warnings del código. RAM 13320 bytes; programa 220085 bytes.
+sdkconfig.defaults fija 8 MB de flash para coincidir con el perfil de placa;
+no es una detección de capacidad de una placa conectada.
+
+Pruebas del filtro real de base/src/logica_optica.h, compilado C11 en host:
+python tests/test_logica.py --cc <gcc-de-escritorio>
+PASS: objeto sostenido, pico de 1 ms rechazado, 101 pulsos reconstruidos
+por sus tiempos, 99→00 en representación módulo 100, hueco corto sin
+rearme, arranque bloqueado y resincronización sin inventar objetos.
+Las pruebas no simulan toda la cola FreeRTOS ni concurrencia entre núcleos.
+
+Revisión de integración: ISR solo captura nivel/tiempo y envía a cola;
+se protege diagnóstico/salidas; la tarea trata desbordes y publica total%100;
+el callback de multiplexeo corre en tarea esp_timer. Colas con pérdidas
+se diagnostican, no se presentan como conteos físicos exactos.
+
+Diagramas de conexiones y bloques compilados con pdflatex. Guía DOCX/PDF
+de 13 páginas con estilos XML y dimensiones idénticos a la guía anterior;
+se revisan todas las páginas, enlaces de GitHub y rúbrica 80+20.
+
+Pendiente de laboratorio: niveles reales de colector, alineación y patillaje,
+pruebas de montaje, inmunidad a luz ambiente y velocidad física fiable.
+No hay una ESP32 conectada. No se promete conteo universal ni ausencia de
+ruido con un filtro temporal.
