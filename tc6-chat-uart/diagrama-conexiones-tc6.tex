@@ -1,0 +1,44 @@
+\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,babel}
+\definecolor{azul}{HTML}{1F4E79}
+\definecolor{naranja}{HTML}{C9601F}
+\definecolor{verde}{HTML}{2E7D32}
+\begin{document}
+\begin{tikzpicture}[font=\small,>=Latex,
+ box/.style={draw=azul,thick,rounded corners,fill=azul!6,align=center,text width=3.6cm,minimum height=1.4cm},
+ pc/.style={draw=azul,thick,rounded corners,fill=naranja!8,align=center,text width=3.0cm,minimum height=1.1cm},
+ arr/.style={->,thick}]
+% --- Montaje principal: dos laptops, dos tarjetas, UART2 cruzada ---
+\node[pc] (pcA) {Laptop A\\Monitor PlatformIO\\115200};
+\node[box,right=1.9cm of pcA] (espA) {ESP32-S3 A\\\textbf{GPIO17} = TX2\\\textbf{GPIO18} = RX2\\GND};
+\node[box,right=5.6cm of espA] (espB) {ESP32-S3 B\\\textbf{GPIO18} = RX2\\\textbf{GPIO17} = TX2\\GND};
+\node[pc,right=1.9cm of espB] (pcB) {Laptop B\\Monitor PlatformIO\\115200};
+\draw[<->,thick] (pcA) -- node[above,font=\footnotesize]{USB (UART0)} (espA);
+\draw[<->,thick] (espB) -- node[above,font=\footnotesize]{USB (UART0)} (pcB);
+% tres cables entre tarjetas
+\draw[arr,verde] ([yshift=0.45cm]espA.east) -- node[above,font=\footnotesize]{A.GPIO17 (TX) $\to$ B.GPIO18 (RX)} ([yshift=0.45cm]espB.west);
+\draw[arr,verde] ([yshift=-0.05cm]espB.west) -- node[below,font=\footnotesize]{B.GPIO17 (TX) $\to$ A.GPIO18 (RX)} ([yshift=-0.05cm]espA.east);
+\draw[thick] ([yshift=-0.55cm]espA.east) -- node[below,font=\footnotesize]{GND $\leftrightarrow$ GND (común, obligatorio)} ([yshift=-0.55cm]espB.west);
+\node[below=0.5cm of espA.south west,anchor=north west,text width=17.5cm,align=left,font=\footnotesize] (nota)
+ {Tres cables Dupont hembra--hembra. TX de una va al RX de la otra (\textbf{cruzados}); nunca TX con TX.
+  Las dos tarjetas son de 3.3 V: no hace falta adaptador de nivel. Cada laptop alimenta su propia tarjeta por USB;
+  por eso el GND común es imprescindible: sin él no hay referencia para los bits y aparecen tramas rotas o nada.
+  UART2 = 115200 bps, 8 bits de datos, sin paridad, 1 bit de paro (8N1). UART0 (GPIO43/44, puente CP2102) queda libre para el Monitor.};
+% --- Loopback ---
+\node[box,below=1.0cm of nota.south west,anchor=north west,text width=3.6cm] (lb) {ESP32-S3 (sola)\\\textbf{GPIO17} $\leftrightarrow$ \textbf{GPIO18}\\puente de un cable};
+\node[pc,left=0cm of lb.west,anchor=east,xshift=-1.4cm] (pcL) {Laptop\\Monitor};
+\draw[<->,thick] (pcL) -- node[above,font=\footnotesize]{USB} (lb);
+\node[right=0.8cm of lb.east,anchor=west,text width=9.6cm,align=left,font=\footnotesize]
+ {\textbf{Modo loopback} (prueba 1, un solo alumno): un cable entre GPIO17 y GPIO18 de la misma tarjeta.
+  Lo que envías vuelve a ti: \texttt{/ping} responde \texttt{LOOPBACK} y un mensaje vuelve como \texttt{[Eco]}.
+  Sirve para comprobar firmware, pines y Monitor antes de conectar al compañero.};
+\node[below=0.5cm of lb.south west,anchor=north west,text width=17.5cm,align=left,text=naranja,font=\footnotesize]
+ {Conecta y desconecta cables con las tarjetas sin alimentar (USB desconectado). No unas 5V/VIN entre tarjetas: solo las tres señales indicadas.
+  Si no llega nada: \texttt{/ping} imprime «sin respuesta: revisa TX$\leftrightarrow$RX cruzados y GND».};
+\end{tikzpicture}
+\end{document}

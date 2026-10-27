@@ -1,0 +1,17 @@
+Capturas del Monitor para TC06 (pendientes: el 2026-10-27 no habia tarjetas conectadas en PC1).
+
+Con DOS ESP32-S3 en la misma PC (cables 17->18, 18<-17 y GND entre ellas):
+
+  pio device list                         -> anota los dos puertos, p. ej. COM5 y COM7
+  pio run -d programa-chat-uart2 -t upload --upload-port COM5
+  pio run -d programa-chat-uart2 -t upload --upload-port COM7
+  (terminal 1)  pio device monitor -d programa-chat-uart2 -p COM5
+  (terminal 2)  pio device monitor -d programa-chat-uart2 -p COM7
+
+Capturas que se esperan (PNG, Win+Shift+S, con los dos monitores visibles):
+  01-arranque.png        banner "TC06 | CHAT UART2 | ARRANQUE | soy S3-xxxx" en ambos monitores
+  02-ping-ok.png         "/ping" -> "S3-xxxx respondio en N us: enlace UART2 OK"
+  03-chat.png            "/nombre Ana" y "/nombre Luis" y tres mensajes cruzados ([Yo] / [Ana] / [Luis])
+  04-loopback.png        una sola tarjeta con 17-18 puenteados: "/ping" -> "LOOPBACK ..." y "[Eco] ..."
+  05-baud-9600.png       "/baud 9600" en UNA tarjeta: "[?] ... trama sin formato" o "FRAME ERROR"
+  06-sin-gnd.png         cable GND retirado: tramas rotas o "sin respuesta: revisa TX<->RX cruzados y GND"
