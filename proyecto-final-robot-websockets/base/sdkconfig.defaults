@@ -1,0 +1,5 @@
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+# Servidor WebSocket dentro de esp_http_server
+CONFIG_HTTPD_WS_SUPPORT=y
+# El curso usa el driver MCPWM clasico (driver/mcpwm.h), como en la Clase 31
+CONFIG_MCPWM_SUPPRESS_DEPRECATE_WARN=y

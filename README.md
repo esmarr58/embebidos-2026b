@@ -20,8 +20,12 @@ Plataforma: **ESP32-S3-DevKitC-1** con **ESP-IDF** en **PlatformIO**.
 | `practica5-contador-optico/base/` | P05 — Contador óptico por interrupción y dos displays. Base guiada 80 puntos + extra funcional opcional 20; sin extra máximo 80/100. |
 | `tc5-interrupciones/` | TC05 — Dos displays: A contador por interrupción externa; B light sleep y control de corriente con VIN 5 V. |
 | `tc6-chat-uart/` | TC06 — Chat por UART2 entre dos ESP32-S3 (GPIO17 TX / GPIO18 RX cruzados, GND común, 115200 8N1): un solo firmware para ambas tarjetas, comandos `/nombre` `/ping` `/baud`, modo loopback y diagnóstico de cableado. |
+| `tc7-i2c-ds3231/` | TC07 — El RTC DS3231 por I2C desde el Monitor (SDA GPIO8, SCL GPIO9, VCC 3V3): consola con `scan`, `hora` (BCD crudo y decodificado), `poner`, `temp`, `osf`, `regs`, `dir`, `vel` y `reset` para provocar y leer errores. |
+| `practica6-reloj-rtc/base/` | P06 — Reloj hh:mm en los 4 displays de la P4 con la hora del DS3231: lectura I2C en una tarea, refresco por `esp_timer`, vistas hh:mm/mm:ss y fecha con botones, `poner` por consola. Base 80 + extra opcional 20; sin extra máximo 80/100. |
+| `proyecto-final-robot-websockets/` | Proyecto final — Robot con L298N y 2 pilas 18650 controlado por WebSockets desde una app genérica: SoftAP `ROBOT-S3-xxxx`, `ws://192.168.4.1/ws`, comandos de texto (`adelante [ms]`, `vel`, `alto`...), paro de seguridad al desconectarse. Base 80 + extra propio 20; diagramas de conexiones completos. |
 
 Para TC05 abre el proyecto A o B completo dentro de `tc5-interrupciones/`; cada carpeta incluye su configuración y diagrama.
 Para TC06 abre `tc6-chat-uart/programa-chat-uart2/` completo y súbelo a las dos tarjetas; el diagrama de conexiones está en `tc6-chat-uart/`.
+Para TC07 abre `tc7-i2c-ds3231/programa-rtc-consola/`; para la P06, `practica6-reloj-rtc/base/`; para el proyecto final, `proyecto-final-robot-websockets/base/`.
 
 Dr. Rubén Estrada Marmolejo · CUCEI, Universidad de Guadalajara
