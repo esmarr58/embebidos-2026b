@@ -59,6 +59,11 @@ Atajos: `w` `s` `a` `d` `x`. Por seguridad el robot va a **ALTO** si se cierra
 el WebSocket o si el teléfono sale de la red del robot. Si una rueda gira al revés
 con `prueba a`/`prueba b`, invierte sus dos cables en el L298N.
 
+También acepta el JSON del robot de 2025A y de la app de Qt de Diseño de Interfaces
+(solo cambia la URL a `ws://192.168.4.1/ws`):
+`{"tipo":"mover","accion":"avanzar|retroceder|izquierda|derecha|parar","ms":600}` → `mover_ack`,
+y `{"tipo":"latido"}` → `latido_ok`.
+
 ## Base (80 puntos)
 
 Robot armado según los diagramas, alimentado por las pilas (sin USB), con el

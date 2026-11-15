@@ -14,6 +14,8 @@
 //   vel <0-100>     prueba a|b   estado     ayuda
 //   Atajos: w=adelante s=atras a=izq d=der x=alto
 //   Con [ms] (50-10000) el robot se mueve ese tiempo y se detiene solo.
+//   Tambien acepta el JSON del robot 2025A / app Qt de Interfaces:
+//     {"tipo":"mover","accion":"avanzar","ms":600}  y  {"tipo":"latido"}
 //
 // Seguridad: el robot se DETIENE si se cierra el WebSocket o si el telefono
 // se sale de la red del robot.
@@ -42,6 +44,7 @@
 #include "esp_netif.h"
 #include "nvs_flash.h"
 #include "esp_http_server.h"
+#include "cJSON.h"
 
 static const char *TAG = "ROBOT";
 
@@ -184,8 +187,57 @@ static movimiento_t a_movimiento(const char *p)
     return (movimiento_t)-1;
 }
 
-// Interpreta una linea y escribe la respuesta en resp
+static void procesar_texto(char *linea, char *resp, size_t n);
+
+// Compatibilidad con el protocolo JSON del robot de 2025A y de la app de Qt de
+// Diseno de Interfaces:  {"tipo":"mover","accion":"avanzar|retroceder|izquierda|derecha|parar","ms":600}
+//                        {"tipo":"latido"}
+// Se traduce al comando de texto equivalente y se responde en JSON.
+static void procesar_json(const char *txt, char *resp, size_t n)
+{
+    cJSON *root = cJSON_Parse(txt);
+    const char *tipo = root ? cJSON_GetStringValue(cJSON_GetObjectItem(root, "tipo")) : NULL;
+    if (!tipo) {
+        snprintf(resp, n, "{\"tipo\":\"error\",\"mensaje\":\"JSON sin campo tipo\"}");
+    } else if (!strcmp(tipo, "latido")) {
+        snprintf(resp, n, "{\"tipo\":\"latido_ok\",\"tiempo_ms\":%llu}",
+                 (unsigned long long)(esp_timer_get_time() / 1000));
+    } else if (!strcmp(tipo, "mover")) {
+        const char *acc = cJSON_GetStringValue(cJSON_GetObjectItem(root, "accion"));
+        cJSON *jms = cJSON_GetObjectItem(root, "ms");
+        int ms = cJSON_IsNumber(jms) ? (int)cJSON_GetNumberValue(jms) : 600;
+        if (ms < MS_MIN) ms = 600;
+        if (ms > MS_MAX) ms = MS_MAX;
+        const char *cmd = "adelante";                 // como en 2025A: sin accion = avanzar
+        if (acc && !strcmp(acc, "retroceder")) cmd = "atras";
+        else if (acc && !strcmp(acc, "izquierda")) cmd = "izq";
+        else if (acc && !strcmp(acc, "derecha")) cmd = "der";
+        else if (acc && !strcmp(acc, "parar")) cmd = "alto";
+        char linea[32], txt_resp[200];
+        if (!strcmp(cmd, "alto")) snprintf(linea, sizeof linea, "alto");
+        else snprintf(linea, sizeof linea, "%s %d", cmd, ms);
+        procesar_texto(linea, txt_resp, sizeof txt_resp);
+        bool ok = !strncmp(txt_resp, "ok", 2);
+        snprintf(resp, n, "{\"tipo\":\"%s\",\"accion\":\"%s\",\"ms\":%d}",
+                 ok ? "mover_ack" : "mover_err", acc ? acc : "avanzar", ms);
+    } else {
+        // TODO (tu extra): otros tipos JSON (telemetria, bateria, rgb, ...)
+        snprintf(resp, n, "{\"tipo\":\"error\",\"mensaje\":\"tipo desconocido\"}");
+    }
+    cJSON_Delete(root);
+}
+
+// Interpreta un mensaje (texto o JSON) y escribe la respuesta en resp
 static void procesar(char *linea, char *resp, size_t n)
+{
+    const char *p = linea;
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (*p == '{') { procesar_json(p, resp, n); ESP_LOGI(TAG, "%s", resp); return; }
+    procesar_texto(linea, resp, n);
+}
+
+// Interpreta una linea de texto y escribe la respuesta en resp
+static void procesar_texto(char *linea, char *resp, size_t n)
 {
     // recorta espacios y saltos de linea que algunas apps agregan
     while (*linea && isspace((unsigned char)*linea)) linea++;
