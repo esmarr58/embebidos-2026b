@@ -1,0 +1,60 @@
+menu "BLESerial (puerto serie sobre BLE)"
+
+    config BLE_SERIAL_DEFAULT_NAME
+        string "Nombre por defecto del dispositivo"
+        default "ESP32-Serial"
+        help
+            Nombre que se anuncia en el scan response cuando ble_serial_init()
+            recibe NULL. Se recorta a 29 bytes.
+
+    config BLE_SERIAL_TX_BUFFER_SIZE
+        int "Bufer TX circular (bytes)"
+        range 256 65536
+        default 2048
+        help
+            Si se llena se descartan los bytes mas antiguos y se incrementa
+            ble_serial_dropped().
+
+    config BLE_SERIAL_RX_BUFFER_SIZE
+        int "Bufer RX circular (bytes)"
+        range 1024 65536
+        default 2048
+        help
+            Cada escritura BLE (hasta 512 bytes; hasta MTU-3 = 514 con MTU 517) entra
+            completa o se descarta entera y se cuenta en ble_serial_rx_dropped().
+            Con 2048 caben 4 escrituras de 512 sin leer.
+
+    config BLE_SERIAL_MAX_LINE
+        int "Longitud maxima de linea para el callback (bytes)"
+        range 16 4096
+        default 256
+
+    config BLE_SERIAL_TX_TIMEOUT_MS
+        int "Espera maxima por espacio en TX (ms)"
+        range 0 60000
+        default 0
+        help
+            0 = nunca espera: si no cabe, se descarta lo mas antiguo.
+
+    config BLE_SERIAL_BUFFER_WHILE_DISCONNECTED
+        bool "Guardar en el bufer TX mientras no hay conexion"
+        default n
+        help
+            Si no se activa, lo que se imprime sin conexion se descarta.
+
+    config BLE_SERIAL_LOCAL_MTU
+        int "MTU maximo aceptado"
+        range 23 517
+        default 517
+
+    config BLE_SERIAL_TASK_STACK
+        int "Pila de la tarea de envio (bytes)"
+        range 2048 16384
+        default 4096
+
+    config BLE_SERIAL_TASK_PRIORITY
+        int "Prioridad de la tarea de envio"
+        range 1 24
+        default 5
+
+endmenu

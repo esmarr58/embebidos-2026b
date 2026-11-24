@@ -1,0 +1,58 @@
+{
+  "name": "BLESerial",
+  "version": "1.0.0",
+  "description": "Serial por BLE (Nordic UART Service) para ESP32, ESP32-S3 y ESP32-C3. Arduino (Stream, Bluedroid, core 2.x y 3.x) y ESP-IDF (API en C, NimBLE). Bufer TX circular sin bloqueo, troceo por MTU-3 y reensamblado por linea.",
+  "keywords": "ble, nus, nordic uart, serial, uart, esp32, esp32s3, nimble, bluedroid",
+  "license": "MIT",
+  "frameworks": [
+    "arduino",
+    "espidf"
+  ],
+  "platforms": [
+    "espressif32"
+  ],
+  "headers": [
+    "BLESerial.h",
+    "ble_serial.h"
+  ],
+  "build": {
+    "srcDir": "src",
+    "includeDir": "src",
+    "libLDFMode": "chain"
+  },
+  "export": {
+    "exclude": [
+      "examples/espidf/*/build",
+      "examples/espidf/*/sdkconfig",
+      "examples/espidf/*/managed_components"
+    ]
+  },
+  "examples": [
+    {
+      "name": "Eco (Arduino)",
+      "base": "examples/arduino/Eco",
+      "files": [
+        "Eco.ino"
+      ]
+    },
+    {
+      "name": "Plotter (Arduino)",
+      "base": "examples/arduino/Plotter",
+      "files": [
+        "Plotter.ino"
+      ]
+    },
+    {
+      "name": "Comandos (Arduino)",
+      "base": "examples/arduino/Comandos",
+      "files": [
+        "Comandos.ino"
+      ]
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/esmarr58/embebidos-2026b.git"
+  },
+  "homepage": "https://github.com/esmarr58/embebidos-2026b/tree/main/bibliotecas/BLESerial"
+}

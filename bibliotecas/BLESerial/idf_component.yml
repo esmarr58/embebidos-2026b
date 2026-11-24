@@ -1,0 +1,17 @@
+version: "1.0.0"
+description: "Serial por BLE (Nordic UART Service) con NimBLE: API en C y envoltura C++ opcional."
+license: "MIT"
+url: "https://github.com/esmarr58/embebidos-2026b/tree/main/bibliotecas/BLESerial"
+repository: "https://github.com/esmarr58/embebidos-2026b.git"
+targets:
+  - esp32
+  - esp32s3
+  - esp32c3
+  - esp32c6
+dependencies:
+  idf: ">=5.0"
+files:
+  exclude:
+    - "examples/**/build/**"
+    - "examples/**/sdkconfig"
+    - "examples/**/managed_components/**"
