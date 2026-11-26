@@ -38,7 +38,7 @@
 otro texto $\to$ \texttt{error: no entiendo ...}\\[4pt]
 \textbf{Tiempo opcional [ms]}: 50 a 10000. Con tiempo, un \texttt{esp\_timer} de una vez regresa a ALTO; sin tiempo, se mueve hasta recibir \texttt{alto}.\\[4pt]
 \textbf{Cambio de sentido}: el firmware suelta los motores 40 ms antes de invertir (protege engranes).\\[4pt]
-\textbf{Seguridad}: cerrar el WebSocket o salir de la red del robot $\Rightarrow$ ALTO.};
+\textbf{Seguridad}: cerrar el WebSocket, salir de la red del robot o 1 s sin que llegue nada (ni el pong a su ping) $\Rightarrow$ ALTO.};
 \node[draw,thick,rounded corners,fill=orange!8,anchor=north west,text width=6.6cm,align=left,font=\footnotesize] at (9.6,-1.6) {%
 \textbf{Ejemplo en la app} (\texttt{>} envías, \texttt{<} responde el robot)\\[3pt]
 \texttt{> vel 60}\\ \texttt{< ok: vel 60\%}\\[2pt]

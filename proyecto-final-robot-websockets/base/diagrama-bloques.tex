@@ -19,9 +19,10 @@
 \node[h,left=of pwm] (l298) {L298N\\OUT1/2 $\to$ motor A\\OUT3/4 $\to$ motor B};
 % Fila 3: seguridad y extra
 \node[b,below=1.3cm of proc] (timer) {\texttt{esp\_timer} \texttt{paro}\\de una vez\\(\texttt{adelante 800})};
-\node[b,left=of timer] (seg) {\texttt{detener()}\\cierre del WebSocket,\\cliente sale del WiFi};
+\node[b,left=of timer] (seg) {\texttt{detener()}\\cierre del WebSocket, sale\\del WiFi o 1\,s sin nada};
 \node[ex,left=of seg] (extra) {\texttt{tarea\_extra}\\cada 500 ms\\\textbf{TODO (tu extra)}};
 \node[b,left=of extra] (gpio) {GPIO11--14\\IN1, IN2, IN3, IN4\\(sentido)};
+\node[b,below=1.1cm of timer,fill=red!6] (vig) {\texttt{tarea\_vigilancia}\\ping cada 250 ms\\1\,s sin nada y moviéndose};
 % Flechas
 \draw[->,thick] (app) -- node[above,font=\footnotesize]{WiFi} (ap);
 \draw[->,thick] (ap) -- (httpd);
@@ -34,8 +35,9 @@
 \draw[->,thick] (gpio.west) -- ++(-0.35,0) |- (l298.west);
 \draw[->,thick] (proc) -- node[right,font=\footnotesize]{si trae [ms]} (timer);
 \draw[->,thick] (timer) -- node[above,font=\footnotesize]{al vencer} (seg);
+\draw[->,thick] (vig.west) -| node[pos=0.25,above,font=\footnotesize]{silencio} (seg.south);
 \draw[->,thick,red!70!black] ($(seg.north)+(0.6,0)$) -- node[right,font=\footnotesize]{ALTO} ($(apl.south)+(0.6,0)$);
 \draw[->,thick,dashed] (ws.east) -- ++(0.4,0) |- node[pos=0.75,above,font=\footnotesize]{respuesta \texttt{ok:} / \texttt{error:}} ($(app.north)+(0,0.55)$) -- (app.north);
-\node[font=\footnotesize,text width=17cm,align=center,below=0.5cm of extra.south east] {Un candado (mutex) protege el estado de los motores: lo tocan la tarea del servidor (comandos) y la del \texttt{esp\_timer} (paro automático). \texttt{close\_fn} del servidor y el evento \texttt{WIFI\_EVENT\_AP\_STADISCONNECTED} llaman a \texttt{detener()}.};
+\node[font=\footnotesize,text width=17cm,align=center,anchor=north] at ($(extra.south east |- vig.south)+(0,-0.4)$) {Un candado (mutex) protege el estado de los motores: lo tocan la tarea del servidor (comandos), la del \texttt{esp\_timer} (paro automático) y la de vigilancia. \texttt{close\_fn} del servidor, el evento \texttt{WIFI\_EVENT\_AP\_STADISCONNECTED} y la vigilancia (1\,s sin recibir ninguna trama, ni el pong a sus ping) llaman a \texttt{detener()}.};
 \end{tikzpicture}
 \end{document}

@@ -17,8 +17,9 @@
 //   Tambien acepta el JSON del robot 2025A / app Qt de Interfaces:
 //     {"tipo":"mover","accion":"avanzar","ms":600}  y  {"tipo":"latido"}
 //
-// Seguridad: el robot se DETIENE si se cierra el WebSocket o si el telefono
-// se sale de la red del robot.
+// Seguridad: el robot se DETIENE si se cierra el WebSocket, si el telefono
+// se sale de la red del robot o si pasa 1 s sin recibir NADA del cliente
+// (el robot le manda un ping cada 250 ms y el pong de respuesta cuenta).
 //
 // Pines (los mismos IN1-IN4 del robot de Diseno de Interfaces):
 //   Motor A (izquierdo): IN1=GPIO11 IN2=GPIO12 ENA=GPIO9  (PWM MCPWM0A)
@@ -61,6 +62,8 @@ static const char *TAG = "ROBOT";
 #define MS_MIN        50
 #define MS_MAX        10000
 #define MAX_CLIENTES  4
+#define MS_SILENCIO   1000     // paro si no llega nada del cliente en este tiempo
+#define MS_PING       250      // cada cuanto el robot manda un ping a sus clientes
 
 #define AP_CLAVE      "embebidos2026"
 #define AP_CANAL      1
@@ -77,6 +80,10 @@ static int clientes_ws[MAX_CLIENTES];      // descriptores de sockets WebSocket
 static int n_clientes = 0;
 static uint32_t n_comandos = 0;
 static char ssid[32];
+static httpd_handle_t servidor = NULL;
+static volatile uint32_t ms_ultimo_msg = 0; // cuando llego la ultima trama (de cualquier tipo)
+
+static uint32_t ahora_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
 // ---------------------------------------------------------------- Motores
 static void pwm_init(void)
@@ -334,24 +341,35 @@ static esp_err_t ws_handler(httpd_req_t *req)
     int fd = httpd_req_to_sockfd(req);
     if (req->method == HTTP_GET) {          // saludo (handshake) del WebSocket
         cliente_agregar(fd);
+        ms_ultimo_msg = ahora_ms();
         ESP_LOGI(TAG, "cliente conectado (socket %d)", fd);
         return ESP_OK;
     }
     httpd_ws_frame_t f = { 0 };
     esp_err_t r = httpd_ws_recv_frame(req, &f, 0);    // primero solo la longitud
     if (r != ESP_OK) return r;
-    if (f.type == HTTPD_WS_TYPE_CLOSE) {
-        if (cliente_quitar(fd)) detener("el cliente cerro el WebSocket");
-        return ESP_OK;
-    }
-    if (f.type != HTTPD_WS_TYPE_TEXT || f.len == 0) return ESP_OK;
+    ms_ultimo_msg = ahora_ms();             // llego algo: el cliente sigue ahi
     if (f.len > 128) return enviar_texto(req, "error: mensaje demasiado largo (max 128)");
 
     char buf[129];
     f.payload = (uint8_t *)buf;
-    r = httpd_ws_recv_frame(req, &f, f.len);
-    if (r != ESP_OK) return r;
+    if (f.len > 0) {
+        r = httpd_ws_recv_frame(req, &f, f.len);
+        if (r != ESP_OK) return r;
+    }
     buf[f.len] = '\0';
+
+    // Tramas de control: las atendemos nosotros (handle_ws_control_frames = true)
+    if (f.type == HTTPD_WS_TYPE_PONG) return ESP_OK;       // respuesta a nuestro ping
+    if (f.type == HTTPD_WS_TYPE_PING) {                     // contesta pong con los mismos datos
+        f.type = HTTPD_WS_TYPE_PONG;
+        return httpd_ws_send_frame(req, &f);
+    }
+    if (f.type == HTTPD_WS_TYPE_CLOSE) {                    // contesta close; el servidor cierra
+        f.len = 0;                                          // el socket y llama a al_cerrar_socket
+        return httpd_ws_send_frame(req, &f);
+    }
+    if (f.type != HTTPD_WS_TYPE_TEXT || f.len == 0) return ESP_OK;
     cliente_agregar(fd);                    // por si se reinicio la cuenta
 
     char resp[256];
@@ -384,13 +402,41 @@ static void servidor_iniciar(void)
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.close_fn = al_cerrar_socket;
     cfg.lru_purge_enable = true;
-    httpd_handle_t srv = NULL;
-    ESP_ERROR_CHECK(httpd_start(&srv, &cfg));
-    httpd_uri_t ws = { .uri = "/ws", .method = HTTP_GET, .handler = ws_handler, .is_websocket = true };
+    ESP_ERROR_CHECK(httpd_start(&servidor, &cfg));
+    httpd_uri_t ws = { .uri = "/ws", .method = HTTP_GET, .handler = ws_handler,
+                       .is_websocket = true, .handle_ws_control_frames = true };
     httpd_uri_t raiz = { .uri = "/", .method = HTTP_GET, .handler = raiz_handler };
-    httpd_register_uri_handler(srv, &ws);
-    httpd_register_uri_handler(srv, &raiz);
+    httpd_register_uri_handler(servidor, &ws);
+    httpd_register_uri_handler(servidor, &raiz);
     ESP_LOGI(TAG, "servidor listo: ws://192.168.4.1/ws");
+}
+
+// ---------------------------------------------------------------- Vigilancia
+// Corre dentro de la tarea del servidor (httpd_queue_work): un ping a cada cliente.
+static void mandar_pings(void *arg)
+{
+    int fds[MAX_CLIENTES];
+    xSemaphoreTake(candado, portMAX_DELAY);
+    int n = n_clientes;
+    memcpy(fds, clientes_ws, sizeof fds);
+    xSemaphoreGive(candado);
+    httpd_ws_frame_t ping = { .type = HTTPD_WS_TYPE_PING, .payload = NULL, .len = 0 };
+    for (int i = 0; i < n; i++) httpd_ws_send_frame_async(servidor, fds[i], &ping);
+}
+
+// Cada 250 ms manda los ping y, si el robot se mueve y lleva 1 s sin recibir
+// nada (ni siquiera el pong), lo detiene: cubre el caso de alejarse del WiFi.
+static void tarea_vigilancia(void *arg)
+{
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(MS_PING));
+        httpd_queue_work(servidor, mandar_pings, NULL);
+        xSemaphoreTake(candado, portMAX_DELAY);
+        bool moviendo = (mov_actual != MOV_ALTO);
+        xSemaphoreGive(candado);
+        if (moviendo && ahora_ms() - ms_ultimo_msg > MS_SILENCIO)
+            detener("1 s sin mensajes del cliente");
+    }
 }
 
 // ---------------------------------------------------------------- WiFi (SoftAP)
@@ -457,6 +503,7 @@ void app_main(void)
 
     wifi_ap_iniciar();
     servidor_iniciar();
+    xTaskCreate(tarea_vigilancia, "vigilancia", 3072, NULL, 5, NULL);
     xTaskCreate(tarea_extra, "extra", 3072, NULL, 4, NULL);
 
     ESP_LOGI(TAG, "PROYECTO FINAL | ROBOT WS | %s | vel inicial %d%% | motores en ALTO", ssid, VEL_INICIAL);

@@ -56,7 +56,10 @@ Un comando de texto por mensaje; el robot contesta `ok: ...` o `error: ...`.
 | `estado`, `ayuda` | estado del robot y lista de comandos |
 
 Atajos: `w` `s` `a` `d` `x`. Por seguridad el robot va a **ALTO** si se cierra
-el WebSocket o si el teléfono sale de la red del robot. Si una rueda gira al revés
+el WebSocket, si el teléfono sale de la red del robot o si pasa **1 s sin recibir
+nada** del cliente. Para notarlo, el robot manda un ping cada 250 ms y cualquier
+trama que llegue (un comando o el pong automático de la app) cuenta como señal de vida:
+mantener presionado un botón no lo detiene, pero alejarse del alcance sí, en ~1 s. Si una rueda gira al revés
 con `prueba a`/`prueba b`, invierte sus dos cables en el L298N.
 
 También acepta el JSON del robot de 2025A y de la app de Qt de Diseño de Interfaces
