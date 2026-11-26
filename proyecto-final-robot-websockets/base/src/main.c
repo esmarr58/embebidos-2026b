@@ -21,6 +21,11 @@
 // se sale de la red del robot o si pasa 1 s sin recibir NADA del cliente
 // (el robot le manda un ping cada 250 ms y el pong de respuesta cuenta).
 //
+// LED RGB de la placa = acuse de recibo: cada comando (texto o JSON) que llega
+// cambia su color (verde, azul, amarillo, cian, magenta, blanco...) si el robot
+// contesta "ok", y lo pone ROJO si contesta "error". Los ping/pong no lo cambian.
+// Es un WS2812 en GPIO48 (DevKitC-1 v1.0); en la v1.1 esta en GPIO38: cambia PIN_LED_RGB.
+//
 // Pines (los mismos IN1-IN4 del robot de Diseno de Interfaces):
 //   Motor A (izquierdo): IN1=GPIO11 IN2=GPIO12 ENA=GPIO9  (PWM MCPWM0A)
 //   Motor B (derecho)  : IN3=GPIO13 IN4=GPIO14 ENB=GPIO10 (PWM MCPWM0B)
@@ -37,6 +42,7 @@
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "driver/mcpwm.h"
+#include "driver/rmt_tx.h"
 #include "esp_timer.h"
 #include "esp_log.h"
 #include "esp_mac.h"
@@ -56,6 +62,8 @@ static const char *TAG = "ROBOT";
 #define PIN_IN4   GPIO_NUM_14
 #define PIN_ENA   9
 #define PIN_ENB   10
+#define PIN_LED_RGB 48     // WS2812 de la placa: GPIO48 en la DevKitC-1 v1.0, GPIO38 en la v1.1
+#define BRILLO_LED  40     // 0-255: el WS2812 a 255 deslumbra y consume ~60 mA
 
 #define FREC_PWM      1000     // Hz: el L298N trabaja bien a 1 kHz
 #define VEL_INICIAL   60       // % de PWM al arrancar
@@ -156,6 +164,65 @@ static void detener(const char *motivo)
 }
 
 static void cb_timer_paro(void *arg) { detener("se cumplio el tiempo"); }
+
+// ---------------------------------------------------------------- LED RGB (acuse de recibo)
+// El WS2812 recibe 24 bits (verde, rojo, azul; el bit mas significativo primero).
+// Un "0" es 0.3 us en alto + 0.9 us en bajo; un "1" es 0.9 us + 0.3 us.
+// El RMT a 10 MHz (0.1 us por tick) genera esos pulsos sin usar el CPU.
+static rmt_channel_handle_t canal_led = NULL;
+static rmt_encoder_handle_t codificador_led = NULL;
+static int indice_color = 0;
+
+static const uint8_t COLORES_OK[][3] = {   // R, G, B (sin rojo: ese es para errores)
+    { 0, 255, 0 }, { 0, 0, 255 }, { 255, 180, 0 }, { 0, 255, 255 }, { 255, 0, 255 }, { 255, 255, 255 },
+};
+#define N_COLORES_OK (sizeof COLORES_OK / sizeof COLORES_OK[0])
+
+static void led_poner(uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!canal_led) return;
+    uint8_t grb[3] = { (uint8_t)(g * BRILLO_LED / 255), (uint8_t)(r * BRILLO_LED / 255),
+                       (uint8_t)(b * BRILLO_LED / 255) };
+    rmt_transmit_config_t tx = { .loop_count = 0 };
+    if (rmt_transmit(canal_led, codificador_led, grb, sizeof grb, &tx) == ESP_OK)
+        rmt_tx_wait_all_done(canal_led, 100);   // el buffer grb es local: espera a que salga
+}
+
+static void led_init(void)
+{
+    rmt_tx_channel_config_t cc = {
+        .gpio_num = PIN_LED_RGB,
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000,     // 0.1 us por tick
+        .mem_block_symbols = 48,
+        .trans_queue_depth = 4,
+    };
+    rmt_bytes_encoder_config_t ec = {
+        .bit0 = { .level0 = 1, .duration0 = 3, .level1 = 0, .duration1 = 9 },
+        .bit1 = { .level0 = 1, .duration0 = 9, .level1 = 0, .duration1 = 3 },
+        .flags.msb_first = 1,
+    };
+    if (rmt_new_tx_channel(&cc, &canal_led) != ESP_OK ||
+        rmt_new_bytes_encoder(&ec, &codificador_led) != ESP_OK ||
+        rmt_enable(canal_led) != ESP_OK) {
+        ESP_LOGW(TAG, "no se pudo iniciar el LED RGB en GPIO%d", PIN_LED_RGB);
+        canal_led = NULL;
+        return;
+    }
+    led_poner(0, 0, 0);
+}
+
+// Acuse de recibo: siguiente color si la respuesta es "ok", rojo si es error.
+// Se llama desde ws_handler (una sola tarea, la del servidor), fuera del candado.
+static void led_acuse(const char *resp)
+{
+    bool error = !strncmp(resp, "error", 5) || strstr(resp, "\"tipo\":\"error\"") ||
+                 strstr(resp, "\"tipo\":\"mover_err\"");
+    if (error) { led_poner(255, 0, 0); return; }
+    const uint8_t *c = COLORES_OK[indice_color];
+    indice_color = (indice_color + 1) % N_COLORES_OK;
+    led_poner(c[0], c[1], c[2]);
+}
 
 // ---------------------------------------------------------------- Clientes
 static void cliente_agregar(int fd)
@@ -349,7 +416,19 @@ static esp_err_t ws_handler(httpd_req_t *req)
     esp_err_t r = httpd_ws_recv_frame(req, &f, 0);    // primero solo la longitud
     if (r != ESP_OK) return r;
     ms_ultimo_msg = ahora_ms();             // llego algo: el cliente sigue ahi
-    if (f.len > 128) return enviar_texto(req, "error: mensaje demasiado largo (max 128)");
+    if (f.len > 128) {
+        led_acuse("error");                 // rojo: no se pudo atender
+        // Hay que leer (y tirar) el payload: si se queda en el socket, el servidor lo toma
+        // como la siguiente trama ("not properly masked") y cierra la conexion.
+        if (f.len > 1024) return ESP_FAIL;  // demasiado grande: se cierra la conexion
+        uint8_t *tirar = malloc(f.len);
+        if (!tirar) return ESP_FAIL;
+        f.payload = tirar;
+        r = httpd_ws_recv_frame(req, &f, f.len);
+        free(tirar);
+        if (r != ESP_OK) return r;
+        return enviar_texto(req, "error: mensaje demasiado largo (max 128)");
+    }
 
     char buf[129];
     f.payload = (uint8_t *)buf;
@@ -374,6 +453,7 @@ static esp_err_t ws_handler(httpd_req_t *req)
 
     char resp[256];
     procesar(buf, resp, sizeof resp);
+    led_acuse(resp);                        // el LED confirma que llego el comando
     return enviar_texto(req, resp);
 }
 
@@ -498,6 +578,7 @@ void app_main(void)
     candado = xSemaphoreCreateMutex();
     gpio_dir_init();
     pwm_init();
+    led_init();
     const esp_timer_create_args_t ta = { .callback = cb_timer_paro, .name = "paro" };
     ESP_ERROR_CHECK(esp_timer_create(&ta, &timer_paro));
 

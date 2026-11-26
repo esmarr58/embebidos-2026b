@@ -62,6 +62,13 @@ trama que llegue (un comando o el pong automático de la app) cuenta como señal
 mantener presionado un botón no lo detiene, pero alejarse del alcance sí, en ~1 s. Si una rueda gira al revés
 con `prueba a`/`prueba b`, invierte sus dos cables en el L298N.
 
+**LED RGB = acuse de recibo.** Cada comando de texto o JSON que llega cambia el color del
+LED RGB de la placa (verde, azul, amarillo, cian, magenta, blanco y de nuevo verde). Si el
+robot contesta `error`, el LED se pone **rojo**. Los ping/pong no lo cambian. Así ves en el robot
+que tu mensaje llegó, aunque la app no muestre la respuesta. Es el WS2812 de la DevKitC-1:
+GPIO48 en la v1.0; en la v1.1 está en GPIO38 (cambia `PIN_LED_RGB` en `src/main.c`).
+Los mensajes de más de 128 bytes se rechazan con `error:` y el robot sigue conectado.
+
 También acepta el JSON del robot de 2025A y de la app de Qt de Diseño de Interfaces
 (solo cambia la URL a `ws://192.168.4.1/ws`):
 `{"tipo":"mover","accion":"avanzar|retroceder|izquierda|derecha|parar","ms":600}` → `mover_ack`,
@@ -78,7 +85,7 @@ comandos de la tabla. El desglose está en la rúbrica de la guía.
 Una función que tú propones y programas encima de la base, con problema/objetivo,
 cambio de código identificable (busca `TODO (tu extra)` en `src/main.c`) y prueba
 antes/después. Ideas: medir la batería por ADC con divisor y enviarla en `estado`,
-rampa de aceleración, coreografía con una secuencia de comandos, LED de estado,
+rampa de aceleración, coreografía con una secuencia de comandos, LED de estado (otro uso del LED RGB, p. ej. color por batería),
 ultrasónico que frene ante un obstáculo, ajuste fino por motor para que avance
 recto, o tu propia interfaz. Cambiar nombres, pines o la clave no cuenta como extra.
 
@@ -88,7 +95,7 @@ Ejemplos: base 80 + extra 0 = 80; base 72 + extra 0 = 72; base 80 + extra 14 = 9
 
 ## Archivos
 
-- `base/src/main.c`: SoftAP, servidor WebSocket, intérprete de comandos, motores y paro de seguridad.
+- `base/src/main.c`: SoftAP, servidor WebSocket, intérprete de comandos, motores, paro de seguridad y LED RGB de acuse.
 - `base/diagrama-bloques.pdf` y `base/diagrama-comandos.pdf`: flujo del firmware y estados/comandos.
 - `diagrama-conexiones.pdf`: armado completo (pilas, interruptor, voltímetro, L298N, motores y ESP32-S3).
 

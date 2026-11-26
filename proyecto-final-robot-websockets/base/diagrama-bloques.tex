@@ -17,6 +17,8 @@
 \node[b,left=of proc] (apl) {\texttt{aplicar(mov)}\\sentido IN1--IN4\\+ PWM \texttt{vel\_pct}};
 \node[b,left=of apl] (pwm) {MCPWM0 · 1 kHz\\A: ENA = GPIO9\\B: ENB = GPIO10};
 \node[h,left=of pwm] (l298) {L298N\\OUT1/2 $\to$ motor A\\OUT3/4 $\to$ motor B};
+\node[b,fill=green!6,right=of proc] (led) {\texttt{led\_acuse(resp)}\\RMT 10 MHz $\to$ WS2812\\GPIO48 (v1.1: GPIO38)};
+\node[h,below=1.3cm of led] (rgb) {LED RGB de la placa\\color nuevo por comando ok\\rojo si \texttt{error}};
 % Fila 3: seguridad y extra
 \node[b,below=1.3cm of proc] (timer) {\texttt{esp\_timer} \texttt{paro}\\de una vez\\(\texttt{adelante 800})};
 \node[b,left=of timer] (seg) {\texttt{detener()}\\cierre del WebSocket, sale\\del WiFi o 1\,s sin nada};
@@ -34,10 +36,12 @@
 \draw[->,thick] ($(apl.south)+(-0.6,0)$) -- ++(0,-0.55) -| (gpio.north);
 \draw[->,thick] (gpio.west) -- ++(-0.35,0) |- (l298.west);
 \draw[->,thick] (proc) -- node[right,font=\footnotesize]{si trae [ms]} (timer);
+\draw[->,thick,green!45!black] (proc) -- node[above,font=\footnotesize]{respuesta} (led);
+\draw[->,thick,green!45!black] (led) -- node[right,font=\footnotesize]{24 bits GRB} (rgb);
 \draw[->,thick] (timer) -- node[above,font=\footnotesize]{al vencer} (seg);
 \draw[->,thick] (vig.west) -| node[pos=0.25,above,font=\footnotesize]{silencio} (seg.south);
 \draw[->,thick,red!70!black] ($(seg.north)+(0.6,0)$) -- node[right,font=\footnotesize]{ALTO} ($(apl.south)+(0.6,0)$);
 \draw[->,thick,dashed] (ws.east) -- ++(0.4,0) |- node[pos=0.75,above,font=\footnotesize]{respuesta \texttt{ok:} / \texttt{error:}} ($(app.north)+(0,0.55)$) -- (app.north);
-\node[font=\footnotesize,text width=17cm,align=center,anchor=north] at ($(extra.south east |- vig.south)+(0,-0.4)$) {Un candado (mutex) protege el estado de los motores: lo tocan la tarea del servidor (comandos), la del \texttt{esp\_timer} (paro automático) y la de vigilancia. \texttt{close\_fn} del servidor, el evento \texttt{WIFI\_EVENT\_AP\_STADISCONNECTED} y la vigilancia (1\,s sin recibir ninguna trama, ni el pong a sus ping) llaman a \texttt{detener()}.};
+\node[font=\footnotesize,text width=17cm,align=center,anchor=north] at ($(extra.south east |- vig.south)+(0,-0.4)$) {Un candado (mutex) protege el estado de los motores: lo tocan la tarea del servidor (comandos), la del \texttt{esp\_timer} (paro automático) y la de vigilancia. \texttt{close\_fn} del servidor, el evento \texttt{WIFI\_EVENT\_AP\_STADISCONNECTED} y la vigilancia (1\,s sin recibir ninguna trama, ni el pong a sus ping) llaman a \texttt{detener()}. Acuse: tras cada comando de texto o JSON, \texttt{ws\_handler} llama a \texttt{led\_acuse()} fuera del candado; los ping/pong no cambian el LED.};
 \end{tikzpicture}
 \end{document}
